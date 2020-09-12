@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import plotly.graph_objects as go
 import config
+
 def main():
     st.sidebar.selectbox('mode',['hi','hello'])
     data = load_data()
@@ -63,7 +64,7 @@ def get_fig_bangkok():
 @st.cache(allow_output_mutation=True)
 def load_data():
     data = dict()
-    with open('../data/bangkok_coordinates.json') as json_file:
+    with open('./data-nice/bangkok_coordinates.json') as json_file:
         data['bkk_coordinates'] = json.load(json_file)  # boundaries of bangkok
     data['df_district_loc'] = pd.read_csv('./data-nice/bkk_district_map.csv', index_col=0)  # one point location of each district # modified
 
