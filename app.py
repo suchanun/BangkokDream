@@ -16,33 +16,51 @@ def main():
     config.df_subbudget = data['df_subbudget']  # mine
     config.df_budget_district = data['df_budget_district']#config.df_budget[pd.notnull(config.df_budget.lat)]
     config.df_item = data['df_item']
+    st.title('ตรวจสอบงบประมาณสำนักงานเขต')
     districts = sorted([district for district in config.df_budget.budget.unique() if district.startswith('สำนักงานเขต')])
-    district = st.selectbox('สำนักงานเขต', districts, format_func=lambda dep: dep[11:])
+    district = st.selectbox('สำนักงานเขต', ['เลือกเขต']+districts, format_func=lambda dep: dep[11:] if dep != 'เลือกเขต' else dep)
+
 
     # plot main map
-    bangkok_fig = get_fig_bangkok()
+    bangkok_fig = get_fig_bangkok(district)
     st.plotly_chart(bangkok_fig)
 
     # choose subbudget of district
 
     # plot pie district
+    if district != 'เลือกเขต':
 
-    df_subbudget = config.df_subbudget  # [config.df_subbudget[]]
-    print('district == ')
-    print(district)
-    df_subbudget = df_subbudget[df_subbudget.budget == district]
-    print(df_subbudget.shape)
+        df_subbudget = config.df_subbudget  # [config.df_subbudget[]]
+        print('district == ')
+        print(district)
+        df_subbudget = df_subbudget[df_subbudget.budget == district]
+        print(df_subbudget.shape)
 
 
-    # st.selectbox('แผนงาน', )
+        # st.selectbox('แผนงาน', )
 
-    subbudgets = df_subbudget.sub_budget
-    subbudget = st.selectbox('แผนงาน', list(subbudgets))
-    district_pie = get_pie_district(df_subbudget, subbudget)
-    st.plotly_chart(district_pie)
+        st.header('งบ{}'.format(district))#องแผนงานต่างๆ
+        subbudgets = df_subbudget.sub_budget
+        subbudget = st.selectbox('ดูรายละเอียดแผนงาน', list(subbudgets))
 
-    fig_items = get_bar_items(district, subbudget)
-    st.plotly_chart(fig_items)
+        district_pie = get_pie_district(df_subbudget, subbudget)
+        st.plotly_chart(district_pie)
+
+        st.subheader('งบโครงการต่างๆใน{}'.format(subbudget))
+        fig_items = get_bar_items(district, subbudget)
+        fig_items.update_layout(
+            xaxis=dict(
+                # tickangle=90,
+                title_text="จำนวนเงิน (บาท)",
+                # title_font={"size": 20},
+                # title_standoff=25
+                )
+            # yaxis=dict(
+            #     title_text="Temperature",
+            #     title_standoff=25)
+            )
+        st.plotly_chart(fig_items)
+
 
 
 def get_bar_items(district, subbudget):
@@ -57,11 +75,11 @@ def get_bar_items(district, subbudget):
         orientation='h',
         text=[f"฿{value:,.0f}" for value in df_item.amount],
         textposition='auto',
-        width=0.35,
+        width=0.30,
         marker=dict(
             #         color='rgba(246, 78, 139, 0.6)',
             color='rgba(92, 200, 154, 255)',
-            line=dict(color='rgba(92, 200, 154, 255)', width=3)
+            line=dict(color='rgba(92, 200, 154, 255)', width=0.8)
             #         line=dict(color='rgba(246, 78, 139, 1.0)', width=3)
         )
     ))
@@ -97,7 +115,12 @@ def get_pie_district(df_subbudget_of_district,subbudget=None):
     fig.update_layout(showlegend=False)
     return fig
 
-def get_fig_bangkok():
+def get_fig_bangkok(district):
+    if district == 'เลือกเขต':
+        df_budget_district = config.df_budget_district
+    else:
+        df_budget_district = config.df_budget_district
+        df_budget_district = df_budget_district[df_budget_district.budget==district]
     data = list()
     data.append(go.Scattermapbox(
                 showlegend = False,
@@ -112,8 +135,8 @@ def get_fig_bangkok():
 
 
     data.append(go.Scattermapbox(
-        lon = config.df_budget_district['lon'],
-        lat = config.df_budget_district['lat'],#%{y:$.2f}f"{value:,.0f}
+        lon = df_budget_district['lon'],
+        lat = df_budget_district['lat'],#%{y:$.2f}f"{value:,.0f}
         hovertemplate = [budget+"<br>"+"฿"+f"{value:,.0f}<extra></extra>" for budget,value in zip(config.df_budget_district['budget'],config.df_budget_district['amount'])],
         showlegend = False,
 
@@ -139,6 +162,7 @@ def get_fig_bangkok():
             center_lon =100.591507,
         )
     )
+
     return fig
 
 @st.cache(allow_output_mutation=True)
