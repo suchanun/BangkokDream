@@ -15,7 +15,7 @@ def main():
     config.df_budget = data['df_budget'] # mine
     config.df_subbudget = data['df_subbudget']  # mine
     config.df_budget_district = data['df_budget_district']#config.df_budget[pd.notnull(config.df_budget.lat)]
-
+    config.df_item = data['df_item']
     districts = sorted([district for district in config.df_budget.budget.unique() if district.startswith('สำนักงานเขต')])
     district = st.selectbox('สำนักงานเขต', districts, format_func=lambda dep: dep[11:])
 
@@ -41,7 +41,34 @@ def main():
     district_pie = get_pie_district(df_subbudget, subbudget)
     st.plotly_chart(district_pie)
 
+    fig_items = get_bar_items(district, subbudget)
+    st.plotly_chart(fig_items)
 
+
+def get_bar_items(district, subbudget):
+    fig = go.Figure()
+    df_item = config.df_item
+    df_item = df_item[(df_item.budget==district)&(df_item.sub_budget == subbudget) ]
+
+    fig.add_trace(go.Bar(
+        y=df_item.sub_items,
+        x=df_item.amount,
+        name='งบจัดสรรทั้งหมด',
+        orientation='h',
+        text=[f"฿{value:,.0f}" for value in df_item.amount],
+        textposition='auto',
+        width=0.35,
+        marker=dict(
+            #         color='rgba(246, 78, 139, 0.6)',
+            color='rgba(92, 200, 154, 255)',
+            line=dict(color='rgba(92, 200, 154, 255)', width=3)
+            #         line=dict(color='rgba(246, 78, 139, 1.0)', width=3)
+        )
+    ))
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    return fig
 
 def get_pie_district(df_subbudget_of_district,subbudget=None):
    # df_subbudget = config.df_subbudget #[config.df_subbudget[]]
@@ -91,10 +118,11 @@ def get_fig_bangkok():
         showlegend = False,
 
         marker = dict(
-            size = 20,#df_sub['pop']/scale,
+            size = 15,#df_sub['pop']/scale,
             color = config.df_budget_district['amount'],
             showscale=True,
             colorscale='Oranges',
+
         ),
 
     )
@@ -123,7 +151,7 @@ def load_data():
     data['df_budget'] = pd.read_pickle('./data-nice/df_budget.pkl')  # mine
     data['df_subbudget'] = pd.read_pickle('./data-nice/sub_budget.pkl')  # mine
     data['df_budget_district'] = data['df_budget'][pd.notnull(data['df_budget'].lat)]
-
+    data['df_item'] = pd.read_pickle('./data-nice/sub_entry.pkl')
     return data
 
 if __name__ == "__main__":
